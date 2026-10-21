@@ -1,0 +1,89 @@
+# Reviewed Aura project CI. No wallet, publisher or model credentials belong here.
+name: Aura validate prepared contribution
+run-name: Aura validate ${{ inputs.target_sha }} ${{ inputs.manifest_sha256 }} ${{ inputs.policy_sha256 }}
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        required: true
+        type: string
+      manifest_sha256:
+        required: true
+        type: string
+      policy_sha256:
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: aura-project-validation
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: aura-validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TARGET_SHA: ${{ inputs.target_sha }}
+      MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
+      POLICY_SHA256: ${{ inputs.policy_sha256 }}
+      TEST_IMAGE: node:24.16.0@sha256:40ad9f3064e67d6860b4bc3fe1880b2953934fd6320ada990e45fe0efa6badd7
+    steps:
+      - name: Validate immutable inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TARGET_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$MANIFEST_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          [[ "$POLICY_SHA256" =~ ^[a-f0-9]{64}$ ]]
+      - name: Checkout target
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: mandiau-matthias/8f4e
+          ref: ${{ inputs.target_sha }}
+          persist-credentials: false
+          submodules: false
+          lfs: false
+          fetch-depth: 1
+      - name: Checkout pinned dependency 1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: andorthehood/glugglugglug
+          ref: 19dcee23cedf993c10a4f03de6dbc3a18c9adeb2
+          path: packages/editor/packages/editor-core/packages/web-ui/packages/glugglugglug
+          persist-credentials: false
+          submodules: false
+          lfs: false
+          fetch-depth: 1
+      - name: Verify target checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test -f package-lock.json
+          test ! -L package-lock.json
+          test "$(git ls-tree HEAD -- packages/editor/packages/editor-core/packages/web-ui/packages/glugglugglug | cut -f1)" = "160000 commit 19dcee23cedf993c10a4f03de6dbc3a18c9adeb2"
+          test "$(git -C packages/editor/packages/editor-core/packages/web-ui/packages/glugglugglug rev-parse HEAD)" = "19dcee23cedf993c10a4f03de6dbc3a18c9adeb2"
+      - name: Fetch pinned test image
+        shell: bash
+        run: docker pull "$TEST_IMAGE"
+      - name: Install locked dependencies without lifecycle scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker volume create aura-validation-work
+          docker run --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --memory 6g --cpus 2 --read-only --tmpfs /tmp:rw,nosuid,size=512m --mount type=bind,source="$GITHUB_WORKSPACE",target=/source,readonly --mount type=volume,source=aura-validation-work,target=/work --workdir /work "$TEST_IMAGE" env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp sh -c 'cp -a /source/. /work/ && find /work -name .git -prune -exec rm -rf {} + && npm ci --ignore-scripts --no-audit --no-fund'
+      - name: Run reviewed checks offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker="$(cat /proc/sys/kernel/random/uuid)"
+          echo "::stop-commands::$marker"
+          docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --memory 6g --cpus 2 --read-only --tmpfs /tmp:rw,nosuid,size=512m --tmpfs /work/packages/8f4e-website/dist:rw,nosuid,size=512m --tmpfs /work/packages/cli/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/language-spec/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/program-composer/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/project-preparser/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/stdlib/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/packages/constant-resolver/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/packages/memory-default-resolver/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/packages/memory-planner/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/packages/memory-reference-resolver/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/packages/semantic-reference-resolver/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/packages/semantic-utils/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/packages/stack-analyzer/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/sub-program/packages/tokenizer/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/wasm-codegen/dist:rw,nosuid,size=512m --tmpfs /work/packages/compiler/packages/wasm-codegen/packages/wasm-utils/dist:rw,nosuid,size=512m --tmpfs /work/packages/config/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/compiler-worker/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/packages/editor-state-testing/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/packages/editor-state-types/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/packages/editor-state/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/packages/state-manager/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/packages/web-ui/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/packages/web-ui/packages/glugglugglug/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/packages/web-ui/packages/render-projection/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-core/packages/web-ui/packages/sprite-generator/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-default/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/editor-website/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/runtime-audio-worklet/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/runtime-test-runner/dist:rw,nosuid,size=512m --tmpfs /work/packages/editor/packages/runtime-web-worker/dist:rw,nosuid,size=512m --tmpfs /work/packages/examples/dist:rw,nosuid,size=512m --tmpfs /work/packages/metrics-dashboard/dist:rw,nosuid,size=512m --tmpfs /work/packages/test-runner/dist:rw,nosuid,size=512m --tmpfs /work/packages/vite-plugin-sources/dist:rw,nosuid,size=512m --mount type=volume,source=aura-validation-work,target=/work,readonly --workdir /work "$TEST_IMAGE" env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp CI=true NX_DAEMON=false NX_NO_CLOUD=true NX_SKIP_NX_CACHE=true NX_WORKSPACE_DATA_DIRECTORY=/tmp/nx-workspace NX_CACHE_DIRECTORY=/tmp/nx-cache sh -c 'node node_modules/nx/dist/bin/nx.js run-many --targets=build --projects=@8f4e/language-spec,@8f4e/compiler,@8f4e/wasm-codegen,@8f4e/editor-state,@8f4e/web-ui --parallel=1 --skip-nx-cache --outputStyle=static && node node_modules/nx/dist/bin/nx.js run-many --targets=test,typecheck --projects=@8f4e/language-spec,@8f4e/compiler,@8f4e/wasm-codegen,@8f4e/editor-state,@8f4e/web-ui --parallel=1 --skip-nx-cache --excludeTaskDependencies --outputStyle=static' 
+          echo "::$marker::"
+      - name: Verify checkout remained unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          git diff --exit-code HEAD -- .

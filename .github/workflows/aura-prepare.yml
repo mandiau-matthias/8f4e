@@ -1,0 +1,62 @@
+name: Aura prepare mechanical contribution
+run-name: Aura prepare ${{ inputs.source_sha }} ${{ inputs.request_sha256 }}
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        required: true
+        type: string
+      request_sha256:
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: aura-project-validation
+  cancel-in-progress: false
+jobs:
+  prepare:
+    name: aura-prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      REQUEST_SHA256: ${{ inputs.request_sha256 }}
+    steps:
+      - name: Validate input identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$REQUEST_SHA256" =~ ^[a-f0-9]{64}$ ]]
+      - name: Checkout trusted preparation runtime
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: mandiau-matthias/8f4e
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - name: Checkout immutable source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: 8f4e/8f4e
+          ref: ${{ inputs.source_sha }}
+          path: source
+          persist-credentials: false
+          submodules: false
+          lfs: false
+          fetch-depth: 1
+      - name: Install trusted Node runtime
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.16.0'
+      - name: Install pinned parser without scripts
+        shell: bash
+        run: npm ci --prefix control/.aura/preparation --ignore-scripts --no-audit --no-fund
+      - name: Generate deterministic preparation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node control/.aura/preparation/remote-runner.mjs source "control/.aura/inputs/$REQUEST_SHA256.json" "$REQUEST_SHA256"

@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           docker volume create aura-validation-work
-          docker run --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --memory 6g --cpus 2 --read-only --tmpfs /tmp:rw,nosuid,size=512m --mount type=bind,source="$GITHUB_WORKSPACE",target=/source,readonly --mount type=volume,source=aura-validation-work,target=/work --workdir /work "$TEST_IMAGE" env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp sh -c 'cp -a /source/. /work/ && find /work -name .git -prune -exec rm -rf {} + && npm ci --ignore-scripts --no-audit --no-fund'
+          docker run --rm --cap-drop ALL --security-opt no-new-privileges --pids-limit 256 --memory 6g --cpus 2 --read-only --tmpfs /tmp:rw,nosuid,size=512m --mount type=bind,source="$GITHUB_WORKSPACE",target=/source,readonly --mount type=volume,source=aura-validation-work,target=/work --workdir /work "$TEST_IMAGE" env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/tmp sh -c 'cp -a --no-preserve=ownership /source/. /work/ && find /work -name .git -prune -exec rm -rf {} + && npm ci --ignore-scripts --no-audit --no-fund'
       - name: Run reviewed checks offline
         shell: bash
         run: |

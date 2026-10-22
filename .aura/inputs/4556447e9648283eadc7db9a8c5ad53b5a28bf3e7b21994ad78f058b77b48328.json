@@ -1,0 +1,90 @@
+{
+  "mode": "historical_replay",
+  "policy": {
+    "schema": "aura.preparation-policy.v1",
+    "id": "8f4e-mechanical-ci-replay",
+    "owner": "mandiau-matthias",
+    "taskClass": "ts_identity_fixture_cleanup_v1",
+    "repositories": [
+      "8f4e/8f4e"
+    ],
+    "symbols": [
+      "MemoryTypes"
+    ],
+    "testHelperPaths": [
+      "packages/compiler/packages/wasm-codegen/tests/initialMemoryDataSegments/testUtils.ts"
+    ],
+    "reviewedAt": "2026-10-22T18:42:24.739620Z",
+    "expiresAt": "2026-10-23T18:42:24.739620Z",
+    "lifecycle": "approved_preparation_only",
+    "executionEnabled": false,
+    "maxFiles": 20,
+    "maxCombinedBytes": 262144,
+    "maxConcurrentWork": 1,
+    "maxSpendRaw": "0",
+    "allowClaims": false,
+    "allowPublication": false,
+    "authorization": {
+      "approved": true,
+      "source": "owner_reviewed_preparation_policy"
+    },
+    "historicalReplay": {
+      "approved": true,
+      "jobId": "pr-8f4e-8f4e-1170",
+      "specHash": "0x2a02d84631ea6f40e6c45bfb1b970573a695da5298d0fb18c909ef7ee5a9cc93",
+      "sourceCommitSha": "c389096027650383afaa2b2c9e4eac016721d39e",
+      "originalCommitSha": "5b507dac8e6df2042dac1372e356fd4474b8e150",
+      "originalManifestHash": "73caba9898a651238b97f299d0ee63b878f062194c42204eef1c8a3ae964aa48",
+      "originalResultTreeSha": "0c1dd24d4444762c85f6b883ea2c3fd5dd18b1e7",
+      "expectedFilesHash": "563392ee138fbb87c0e442f6c9b50279fb9efd72af7bfc76af46ebf618bf9cfc"
+    }
+  },
+  "job": {
+    "provider": "averray",
+    "id": "pr-8f4e-8f4e-1170",
+    "specHash": "0x2a02d84631ea6f40e6c45bfb1b970573a695da5298d0fb18c909ef7ee5a9cc93",
+    "taskClass": "ts_identity_fixture_cleanup_v1",
+    "repository": "8f4e/8f4e"
+  },
+  "observation": {
+    "ci": {
+      "repositoryPublic": true,
+      "standardGitHubHostedLinux": true,
+      "billingVerifiedFree": true,
+      "paidOverageDisabled": true,
+      "availableRuns": 1,
+      "activeRuns": 0,
+      "artifactsEnabled": false,
+      "cacheEnabled": false,
+      "verifiedAt": "2026-10-22T18:42:24.739620Z"
+    }
+  },
+  "source": {
+    "repository": "8f4e/8f4e",
+    "baseBranch": "main",
+    "baseCommitSha": "c389096027650383afaa2b2c9e4eac016721d39e",
+    "baseTreeSha": "5644edc62063d67d3303828ebc93ad7af99e33b6"
+  },
+  "cleanup": {
+    "symbol": "MemoryTypes",
+    "valuesSymbol": "scalarMemoryDeclarationInstructions",
+    "valueType": "ScalarMemoryDeclarationInstruction",
+    "productionPath": "packages/compiler/packages/language-spec/src/memory.ts",
+    "importSources": [
+      "./memory",
+      "@8f4e/language-spec"
+    ]
+  },
+  "commit": {
+    "author": {
+      "name": "mandiau-matthias",
+      "email": "mandiau-matthias@users.noreply.github.com",
+      "date": "2026-10-21T11:10:33Z"
+    },
+    "committer": {
+      "name": "mandiau-matthias",
+      "email": "mandiau-matthias@users.noreply.github.com",
+      "date": "2026-10-21T11:10:33Z"
+    }
+  }
+}
